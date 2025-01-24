@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="recycler_scroll_listener_attached" type="id" />
+
+    <item name="recycler_data_observer_attached" type="id" />
+</resources>
