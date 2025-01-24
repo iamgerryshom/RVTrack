@@ -4,5 +4,5 @@ before_install:
   - ./gradlew assembleRelease
 install:
   - FILE="RVTrack/build/outputs/aar/RVTrack-release.aar"
-  - mvn install:install-file -Dfile=$FILE -DgroupId=com.github.iamgerrshom -DartifactId=RVTRrack -Dversion=1.0.0 -Dpackaging=aar -DgeneratePom=true
+  - mvn install:install-file -Dfile=$FILE -DgroupId=com.github.iamgerrshom -DartifactId=RVTrack -Dversion=1.0.0 -Dpackaging=aar -DgeneratePom=true
 
