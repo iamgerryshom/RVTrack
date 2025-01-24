@@ -58,8 +58,6 @@ project.afterEvaluate {
     }
 }
 
-
-
 dependencies {
 
     implementation(libs.appcompat)
