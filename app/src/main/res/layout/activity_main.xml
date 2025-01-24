@@ -9,10 +9,9 @@
 
     <com.wid.rvtrack.RVTrackView
         android:id="@+id/rvTrackView"
-        android:layout_width="90dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintStart_toStartOf="parent"
-        android:background="#713B3B"
         app:recyclerView="@id/titleRecycler"
         app:layout_constraintTop_toTopOf="parent"
         />

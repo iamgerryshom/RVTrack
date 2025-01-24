@@ -216,26 +216,50 @@ public class RVTrackView extends View {
         // Normalize the scroll offset to the corresponding position of the active indicator
         activeIndicatorOffset = (horizontalScrollOffset / totalIndicatorScrollRange) * totalIndicatorOffsetWidth;
 
+        // Determine scrolling direction
         final boolean isScrollingForward = (activeIndicatorOffset > previousActiveIndicatorOffset);
+        // Update the previous offset
+        previousActiveIndicatorOffset = activeIndicatorOffset;
 
-        // Check if we've reached the maximum horizontal scroll position
-        if (horizontalScrollOffset >= totalScrollRange) {
-            // If at the end, set the active indicator to the last position
-            activeIndicatorOffset = totalIndicatorOffsetWidth;
+
+        if (isScrollingForward) {
+            handleForwardOffset(totalIndicatorOffsetWidth, totalIndicatorScrollRange);
         } else {
-            // If the offset exceeds the total indicator width, move it backward by one indicator width
-            while (activeIndicatorOffset >= totalIndicatorOffsetWidth) {
-                // Move the indicator back by one indicator width
-                activeIndicatorOffset -= (radius * 2 + indicatorGapSize);
-
-                // Ensure the offset stays within the bounds of the total indicator scroll range
-                activeIndicatorOffset = Math.max(0, Math.min(activeIndicatorOffset, totalIndicatorScrollRange));
-            }
+            handleForwardOffset(totalIndicatorOffsetWidth, totalIndicatorScrollRange);
         }
 
-        previousActiveIndicatorOffset = activeIndicatorOffset;
+       handleEdgeCase(horizontalScrollOffset, totalScrollRange, totalIndicatorOffsetWidth);
     }
 
+    private void handleForwardOffset(final float totalIndicatorOffsetWidth, final float totalIndicatorScrollRange) {
+        // Handle forward scrolling
+        while (activeIndicatorOffset >= totalIndicatorOffsetWidth) {
+            // Move the indicator back by one indicator width
+            activeIndicatorOffset -= ((radius * 2) + indicatorGapSize);
+
+            // Ensure the offset stays within the bounds of the total indicator scroll range
+            activeIndicatorOffset = Math.max(0, Math.min(activeIndicatorOffset, totalIndicatorScrollRange));
+        }
+    }
+
+    private void handleReverseOffset(final float totalIndicatorOffsetWidth, final float totalIndicatorScrollRange) {
+        while (activeIndicatorOffset >= totalIndicatorOffsetWidth - (radius * 2 + indicatorGapSize)) {
+            // Move the indicator back by one indicator width
+            activeIndicatorOffset += ((radius * 2) + indicatorGapSize);
+
+            // Ensure the offset stays within the bounds of the total indicator scroll range
+            activeIndicatorOffset = Math.max(0, Math.min(activeIndicatorOffset, totalIndicatorScrollRange));
+        }
+    }
+
+    private void handleEdgeCase(final float horizontalScrollOffset, final float totalScrollRange, final float totalIndicatorOffsetWidth) {
+        // Handle the edge case when scrolling reaches the end
+        if (horizontalScrollOffset >= totalScrollRange) {
+            activeIndicatorOffset = totalIndicatorOffsetWidth;
+        } else if (horizontalScrollOffset <= 0) {
+            activeIndicatorOffset = 0;
+        }
+    }
 
     private float getWrapWidth() {
         return radius + (indicatorCount - 1) * (radius * 2f + indicatorGapSize) + radius;
