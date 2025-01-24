@@ -26,10 +26,12 @@ public class RVTrackView extends View {
 
     private static float _defaultIndicatorRadius;
     private static final int _defaultIndicatorCount = 0;
+    private static final int _defaultToolsIndicatorCount = 3;
     private static int _defaultIndicatorGapSize;
 
     private int _recyclerViewId;
     private int indicatorCount;
+    private int visibleIndicatorCount;
     private int activeIndex;
     private float activeIndicatorOffset;
     private Paint inactiveIndicatorPaint;
@@ -66,6 +68,9 @@ public class RVTrackView extends View {
         _defaultIndicatorRadius = DisplayUtils.dpToPx(6);
         _defaultIndicatorGapSize = DisplayUtils.dpToPx(2);
 
+        indicatorCount = _defaultToolsIndicatorCount;
+        visibleIndicatorCount = _defaultToolsIndicatorCount;
+
         _recyclerViewId = findRecyclerViewIdFromAttributeSet(attrs);
 
         defaults();
@@ -85,6 +90,7 @@ public class RVTrackView extends View {
 
     }
 
+
     private void handleRecyclerViewAttr(final int recyclerViewId) {
         if(recyclerViewId == 0) return;
         final Context context = getContext();
@@ -102,6 +108,7 @@ public class RVTrackView extends View {
     private void defaults() {
         radius = _defaultIndicatorRadius;
         indicatorCount = _defaultIndicatorCount;
+        visibleIndicatorCount = _defaultIndicatorCount;
         indicatorGapSize = _defaultIndicatorGapSize;
     }
 
@@ -147,7 +154,7 @@ public class RVTrackView extends View {
 
     private void handleAdapter(RecyclerView recyclerView) {
         if (recyclerView.getTag(R.id.recycler_data_observer_attached) == null) {
-            indicatorCount = recyclerView.getAdapter().getItemCount(); // initial item count
+            setIndicatorCount(recyclerView.getAdapter().getItemCount());
             recyclerView.getAdapter().registerAdapterDataObserver(createAdapterDataObserver(recyclerView));
             recyclerView.setTag(R.id.recycler_data_observer_attached, true); // Mark observer as added
         }
@@ -171,14 +178,14 @@ public class RVTrackView extends View {
             @Override
             public void onItemRangeInserted(int positionStart, int itemCount) {
                 Log.d(TAG, itemCount + " items added from position " + positionStart);
-                indicatorCount += itemCount;
+                setIndicatorCount(indicatorCount + itemCount);
                 invalidate();
             }
 
             @Override
             public void onItemRangeRemoved(int positionStart, int itemCount) {
                 Log.d(TAG, itemCount + " items removed from position " + positionStart);
-                indicatorCount = indicatorCount == 0 ? 0 : indicatorCount - itemCount;
+                setIndicatorCount(indicatorCount == 0 ? 0 : indicatorCount - itemCount);
                 new Handler().postDelayed(()->{
                     handleScroll(recyclerView);
                 }, 6); //small delay to give recycler time to adjust it internal calculations
@@ -192,36 +199,82 @@ public class RVTrackView extends View {
         invalidate();
     }
 
+    private float previousActiveIndicatorOffset;
     private void calculateActiveIndicatorOffset(final RecyclerView recyclerView) {
-        final float scrollDelta = recyclerView.computeHorizontalScrollOffset();
-        final float totalScrollableWidth = calculateTotalScrollableWidth(recyclerView);
-        final float indicatorScrollableWidth = calculateIndicatorScrollableWidth();
+        // Get the current horizontal scroll offset of the RecyclerView
+        final float horizontalScrollOffset = recyclerView.computeHorizontalScrollOffset();
 
-        // Normalize scroll delta to indicator range
-        activeIndicatorOffset = (scrollDelta / totalScrollableWidth) * indicatorScrollableWidth;
+        // Calculate the total scrollable width of the RecyclerView (the area over which the user can scroll)
+        final float totalScrollRange = recyclerView.computeHorizontalScrollRange() - recyclerView.getWidth();
+
+        // Calculate the total range for indicator scrolling (total scrollable area adjusted for visible items)
+        final float totalIndicatorScrollRange = totalScrollRange - ((indicatorCount - visibleIndicatorCount) * recyclerView.getWidth());
+
+        // Calculate the total width occupied by the indicators (width of one indicator + gap between indicators)
+        final float totalIndicatorOffsetWidth = (radius * 2f + indicatorGapSize) * (visibleIndicatorCount - 1);
+
+        // Normalize the scroll offset to the corresponding position of the active indicator
+        activeIndicatorOffset = (horizontalScrollOffset / totalIndicatorScrollRange) * totalIndicatorOffsetWidth;
+
+        final boolean isScrollingForward = (activeIndicatorOffset > previousActiveIndicatorOffset);
+
+        // Check if we've reached the maximum horizontal scroll position
+        if (horizontalScrollOffset >= totalScrollRange) {
+            // If at the end, set the active indicator to the last position
+            activeIndicatorOffset = totalIndicatorOffsetWidth;
+        } else {
+            // If the offset exceeds the total indicator width, move it backward by one indicator width
+            while (activeIndicatorOffset >= totalIndicatorOffsetWidth) {
+                // Move the indicator back by one indicator width
+                activeIndicatorOffset -= (radius * 2 + indicatorGapSize);
+
+                // Ensure the offset stays within the bounds of the total indicator scroll range
+                activeIndicatorOffset = Math.max(0, Math.min(activeIndicatorOffset, totalIndicatorScrollRange));
+            }
+        }
+
+        previousActiveIndicatorOffset = activeIndicatorOffset;
     }
 
-    private float calculateTotalScrollableWidth(final RecyclerView recyclerView) {
-        return (indicatorCount - 1) * recyclerView.getWidth(); // Total scrollable area
-    }
-
-    private float calculateIndicatorScrollableWidth() {
-        return (radius * 2 + indicatorGapSize) * (indicatorCount - 1); // Indicator movement area
-    }
 
     private float getWrapWidth() {
-        return radius + (indicatorCount - 1) * (radius * 2 + indicatorGapSize) + radius;
+        return radius + (indicatorCount - 1) * (radius * 2f + indicatorGapSize) + radius;
     }
 
     private float getWrapHeight() {
         return radius * 2;
     }
 
+    private void setIndicatorCount(final int count) {
+        indicatorCount = count;
+        visibleIndicatorCount = calculateVisibleIndicatorCount();
+        requestLayout();
+    }
+
+    private int calculateVisibleIndicatorCount() {
+        // Get the total width taken by one indicator (circle diameter + gap)
+        final float indicatorWidth = radius * 2f + indicatorGapSize;
+
+        // If wrapWidth is greater than available width, calculate how many fit in the available width
+        if (getWrapWidth() > getWidth()) {
+            // Calculate how many indicators fit in the available width
+            return (int) (getWidth() / indicatorWidth);
+        }
+
+        // If wrapWidth fits within the available width, return all indicators
+        return indicatorCount;
+    }
+
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         // Calculate the desired width and height
         final int desiredWidth = (int) getWrapWidth();
         final int desiredHeight = (int) getWrapHeight();
+
+        Log.d(TAG, "OnMeasure width: " + desiredWidth);
+        Log.d(TAG, "OnMeasure height: " + desiredWidth);
+
 
         final int widthMode = MeasureSpec.getMode(widthMeasureSpec);
         final int widthSize = MeasureSpec.getSize(widthMeasureSpec);
@@ -270,7 +323,7 @@ public class RVTrackView extends View {
     }
 
     private void drawInactiveCircleIndicator(final Canvas canvas) {
-        for(int i = 0; i < indicatorCount; i++) {
+        for(int i = 0; i < visibleIndicatorCount; i++) {
             final float cx = radius + i * (radius * 2f + indicatorGapSize); // radius * 2 is the diameter, plus the gap
             canvas.drawCircle(cx, getHeight() / 2f, radius, inactiveIndicatorPaint);
         }

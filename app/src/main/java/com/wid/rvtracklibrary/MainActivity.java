@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         titleAdapter.setTitles(generateSampleTitles());
 
         new Handler().postDelayed(()->{
-            titleAdapter.removeTitles(3);
+            //titleAdapter.removeTitles(3);
         }, 10000);
 
     }
