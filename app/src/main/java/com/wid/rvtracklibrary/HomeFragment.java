@@ -23,7 +23,8 @@ public class HomeFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         init();
-        new PagerSnapHelper().attachToRecyclerView(binding.titleRecycler);
+
+        //new PagerSnapHelper().attachToRecyclerView(binding.titleRecycler);
 
         final TitleAdapter titleAdapter = new TitleAdapter(getContext());
 
