@@ -36,8 +36,8 @@ To use RVTrackView in your project:
    You can attach the `RVTrackView` to your `RecyclerView` directly in your Java or Kotlin code like this:
 
    ```java
-   RecyclerView recyclerView = findViewById(R.id.recyclerView);
-   RVTrackView rvTrackView = findViewById(R.id.rvTrackView);
+   final RecyclerView recyclerView = findViewById(R.id.recyclerView);
+   final RVTrackView rvTrackView = findViewById(R.id.rvTrackView);
    rvTrackView.attachToRecyclerView(recyclerView);
    ```
 
