@@ -2,7 +2,9 @@ package com.wid.rvtrack;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,6 +15,8 @@ import android.view.ViewTreeObserver;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -22,7 +26,9 @@ import com.wid.rvtrack.paint.PaintUtils;
 public class RVTrackView extends View {
 
     private static final String _namespace = "http://schemas.android.com/apk/res-auto";
-    private static final String _recyclerViewAttributeName = "recyclerView";
+    private static final String _recyclerViewAttributeName = "recycler_view";
+    private static final String _inactiveIndicatorColorAttributeName = "inactive_indicator_color";
+    private static final String _activeIndicatorColorAttributeName = "active_indicator_color";
 
     private static float _defaultIndicatorRadius;
     private static final int _defaultIndicatorCount = 0;
@@ -33,6 +39,7 @@ public class RVTrackView extends View {
     private int indicatorCount;
     private int visibleIndicatorCount;
     private int activeIndex;
+
     private float activeIndicatorOffset;
     private Paint inactiveIndicatorPaint;
     private Paint activeIndicatorPaint;
@@ -62,8 +69,8 @@ public class RVTrackView extends View {
     }
 
     private void init(final Context context, final AttributeSet attrs) {
-        inactiveIndicatorPaint = PaintUtils.createInactiveIndicatorPaint();
-        activeIndicatorPaint = PaintUtils.createActiveIndicatorPaint();
+        inactiveIndicatorPaint = PaintUtils.createInactiveIndicatorPaint(Color.GRAY);
+        activeIndicatorPaint = PaintUtils.createActiveIndicatorPaint(Color.WHITE);
 
         _defaultIndicatorRadius = DisplayUtils.dpToPx(6);
         _defaultIndicatorGapSize = DisplayUtils.dpToPx(2);
@@ -71,9 +78,53 @@ public class RVTrackView extends View {
         indicatorCount = _defaultToolsIndicatorCount;
         visibleIndicatorCount = _defaultToolsIndicatorCount;
 
+        defaults();
+
+        handleAttributeSet(attrs);
+
+    }
+
+    private void handleAttributeSet(final AttributeSet attrs) {
+
         _recyclerViewId = findRecyclerViewIdFromAttributeSet(attrs);
 
-        defaults();
+        final String inactiveIndicatorColorString = attrs.getAttributeValue(_namespace, _inactiveIndicatorColorAttributeName);
+        final String activeIndicatorColorString = attrs.getAttributeValue(_namespace, _activeIndicatorColorAttributeName);
+
+        float circleIndicatorRadius = getContext().getTheme().obtainStyledAttributes(
+                attrs,
+                R.styleable.RecyclerViewWrapper, // Your custom styleable name
+                0, // Default style
+                0  // Default value
+        ).getDimension(R.styleable.RecyclerViewWrapper_circle_indicator_radius, _defaultIndicatorRadius);
+
+        Log.d(TAG, "inactiveIndicatorColor: " + inactiveIndicatorColorString);
+        Log.d(TAG, "activeIndicatorColor: " + activeIndicatorColorString);
+        Log.d(TAG, "circleIndicatorRadius: " + circleIndicatorRadius);
+
+        if (inactiveIndicatorColorString != null || !inactiveIndicatorColorString.isEmpty()) {
+            if (inactiveIndicatorColorString.startsWith("#")) {
+                inactiveIndicatorPaint.setColor(Color.parseColor(inactiveIndicatorColorString));
+            } else {
+                final int inactiveIndicatorColorResId = attrs.getAttributeResourceValue(_namespace, _inactiveIndicatorColorAttributeName, 0);
+                if (inactiveIndicatorColorResId != 0) {
+                    inactiveIndicatorPaint.setColor(ContextCompat.getColor(getContext(), inactiveIndicatorColorResId));
+                }
+            }
+        }
+
+        if (activeIndicatorColorString != null || !activeIndicatorColorString.isEmpty()) {
+            if (activeIndicatorColorString.startsWith("#")) {
+                activeIndicatorPaint.setColor(Color.parseColor(activeIndicatorColorString));
+            } else {
+                final int inactiveIndicatorColorResId = attrs.getAttributeResourceValue(_namespace, _activeIndicatorColorAttributeName, 0);
+                if (inactiveIndicatorColorResId != 0) {
+                    activeIndicatorPaint.setColor(ContextCompat.getColor(getContext(), inactiveIndicatorColorResId));
+                }
+            }
+        }
+
+        this.radius = circleIndicatorRadius;
 
     }
 
@@ -90,20 +141,23 @@ public class RVTrackView extends View {
 
     }
 
-
     private void handleRecyclerViewAttr(final int recyclerViewId) {
         if(recyclerViewId == 0) return;
-        final Context context = getContext();
-        if (context instanceof Activity) {
-            final Activity activity = (Activity) context;
-            final RecyclerView recyclerView = activity.findViewById(recyclerViewId);
-            if (recyclerView != null) {
-                attachToRecyclerView(recyclerView);
-            }
-        } else {
-            Log.d(TAG, "Context is not an Activity. Cannot find views.");
-        }
+        final Activity activity = resolveActivityFromContext(getContext());
+        if(activity == null) return;
+        attachToRecyclerView(activity.findViewById(recyclerViewId));
     }
+
+    private Activity resolveActivityFromContext(Context context) {
+        while (context instanceof ContextWrapper) {
+            if (context instanceof Activity) {
+                return (Activity) context; // Found an Activity
+            }
+            context = ((ContextWrapper) context).getBaseContext(); // Unwrap ContextWrapper
+        }
+        return null;
+    }
+
 
     private void defaults() {
         radius = _defaultIndicatorRadius;
@@ -113,7 +167,6 @@ public class RVTrackView extends View {
     }
 
     public void attachToRecyclerView(final RecyclerView recyclerView) {
-
         if(recyclerView == null) throw new RuntimeException("RecyclerView cannot be null");
         recyclerView.addOnLayoutChangeListener(createRecyclerViewLayoutChangeListener(recyclerView));
 
@@ -335,6 +388,22 @@ public class RVTrackView extends View {
         setMeasuredDimension(width, height);
     }
 
+    public void setCircleIndicatorRadius(final float circleRadius) {
+        this.radius = circleRadius;
+        invalidate();
+    }
+
+    public void setActiveIndicatorColor(final int activeIndicatorColor) {
+        activeIndicatorPaint.setColor(activeIndicatorColor);
+        invalidate();
+    }
+
+    public void setInactiveIndicatorColor(final int inactiveIndicatorColor) {
+        inactiveIndicatorPaint.setColor(inactiveIndicatorColor);
+        invalidate();
+    }
+
+
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
@@ -347,15 +416,28 @@ public class RVTrackView extends View {
     }
 
     private void drawInactiveCircleIndicator(final Canvas canvas) {
-        for(int i = 0; i < visibleIndicatorCount; i++) {
-            final float cx = radius + i * (radius * 2f + indicatorGapSize); // radius * 2 is the diameter, plus the gap
+        // Calculate total width of all indicators and gaps
+        final float totalWidth = visibleIndicatorCount * (radius * 2f) + (visibleIndicatorCount - 1) * indicatorGapSize;
+
+        // Calculate the starting x-coordinate to center the indicators
+        final float startX = (getWidth() - totalWidth) / 2f;
+
+        for (int i = 0; i < visibleIndicatorCount; i++) {
+            // Calculate the x-coordinate of each indicator
+            final float cx = startX + radius + i * (radius * 2f + indicatorGapSize);
             canvas.drawCircle(cx, getHeight() / 2f, radius, inactiveIndicatorPaint);
         }
     }
 
     private void drawActiveCircleIndicator(final Canvas canvas) {
-        // Calculate the position of the active indicator based on the scroll distance (smallerWidth)
-        final float activeCx = radius + activeIndicatorOffset;  // smallerWidth is the horizontal scroll offset scaled to the indicator's movement
+        // Calculate total width of all indicators and gaps
+        final float totalWidth = visibleIndicatorCount * (radius * 2f) + (visibleIndicatorCount - 1) * indicatorGapSize;
+
+        // Calculate the starting x-coordinate to center the indicators
+        final float startX = (getWidth() - totalWidth) / 2f;
+
+        // Calculate the position of the active indicator based on the scroll distance
+        final float activeCx = startX + radius + activeIndicatorOffset;
         canvas.drawCircle(activeCx, getHeight() / 2f, radius, activeIndicatorPaint);
     }
 
