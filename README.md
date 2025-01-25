@@ -41,6 +41,10 @@ To use RVTrackView in your project:
    rvTrackView.attachToRecyclerView(recyclerView);
    ```
 
-   and that is all that you need to do.
+## Demo Video
+
+You can watch the demo video here:
+
+![Demo Video](./RVTrack/assets/demo_video.mp4)
 
 
