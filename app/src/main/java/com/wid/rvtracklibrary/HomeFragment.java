@@ -3,6 +3,7 @@ package com.wid.rvtracklibrary;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.PagerSnapHelper;
 
@@ -25,13 +26,14 @@ public class HomeFragment extends Fragment {
         new PagerSnapHelper().attachToRecyclerView(binding.titleRecycler);
 
         final TitleAdapter titleAdapter = new TitleAdapter(getContext());
+
         binding.titleRecycler.setAdapter(titleAdapter);
 
-        binding.titleRecycler.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
-
-        //binding.rvTrackView.attachToRecyclerView(binding.titleRecycler);
-
         titleAdapter.setTitles(generateSampleTitles());
+
+        new Handler().postDelayed(()->{
+            binding.titleRecycler.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        }, 10000);
 
         return binding.getRoot();
     }

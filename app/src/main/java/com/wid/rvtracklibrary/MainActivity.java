@@ -9,6 +9,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Handler;
 import android.view.View;
 
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -32,12 +34,15 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        replaceFragment(new HomeFragment());
+
+    }
+
+    private void start() {
         new PagerSnapHelper().attachToRecyclerView(binding.titleRecycler);
 
         final TitleAdapter titleAdapter = new TitleAdapter(this);
         binding.titleRecycler.setAdapter(titleAdapter);
-
-        binding.titleRecycler.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
 
 
         //binding.rvTrackView.attachToRecyclerView(binding.titleRecycler);
@@ -47,7 +52,11 @@ public class MainActivity extends AppCompatActivity {
         new Handler().postDelayed(()->{
             //titleAdapter.removeTitles(3);
         }, 10000);
-
+    }
+    private void replaceFragment(final Fragment fragment) {
+        final FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, fragment, fragment.getClass().getName());
+        fragmentTransaction.commit();
     }
 
     private List<String> generateSampleTitles() {

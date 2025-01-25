@@ -141,6 +141,7 @@ public class RVTrackView extends View {
 
     }
 
+
     private void handleRecyclerViewAttr(final int recyclerViewId) {
         if(recyclerViewId == 0) return;
         final Activity activity = resolveActivityFromContext(getContext());
@@ -167,37 +168,39 @@ public class RVTrackView extends View {
     }
 
     public void attachToRecyclerView(final RecyclerView recyclerView) {
-        if(recyclerView == null) throw new RuntimeException("RecyclerView cannot be null");
-        recyclerView.addOnLayoutChangeListener(createRecyclerViewLayoutChangeListener(recyclerView));
 
+        if(recyclerView != null) {
+            Log.d(TAG, "RecyclerView was found");
+        }
+
+        if(recyclerView == null) throw new RuntimeException("RecyclerView cannot be null");
+
+        recyclerView.getViewTreeObserver().addOnGlobalLayoutListener(createRecyclerViewGlobalLayoutListener(recyclerView));
     }
 
-    private View.OnLayoutChangeListener createRecyclerViewLayoutChangeListener(final RecyclerView recyclerView) {
-        return new View.OnLayoutChangeListener() {
+    private ViewTreeObserver.OnGlobalLayoutListener createRecyclerViewGlobalLayoutListener(final RecyclerView recyclerView) {
+        return new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
-            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+            public void onGlobalLayout() {
                 final boolean hasLayoutManager = recyclerView.getLayoutManager() != null;
                 final boolean hasAdapter = recyclerView.getAdapter() != null;
 
-                if (hasAdapter) {
-                    handleAdapter(recyclerView);
-                }
-
-                if (hasLayoutManager) {
-                    handleLayoutManager(recyclerView);
-                }
+                if (hasAdapter && !hasLayoutManager) Log.w(TAG, "Warning: The RecyclerView indicator detected that the RecyclerView has an adapter set but no LayoutManager. A LayoutManager is required for proper indicator functionality.");
+                if (hasLayoutManager && !hasAdapter) Log.w(TAG, "Warning: The RecyclerView indicator detected that the RecyclerView has a LayoutManager set but no adapter. An adapter is required for the indicator to function properly.");
 
                 if (hasLayoutManager && hasAdapter) {
-                    cleanUpListener(recyclerView, this);
+                    handleAdapter(recyclerView);
+                    handleLayoutManager(recyclerView);
+                    recyclerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 }
+
             }
         };
     }
 
+
     private void handleLayoutManager(RecyclerView recyclerView) {
         if (recyclerView.getLayoutManager() instanceof LinearLayoutManager) {
-            final LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-            activeIndex = linearLayoutManager.findFirstCompletelyVisibleItemPosition();
             if (recyclerView.getTag(R.id.recycler_scroll_listener_attached) == null) {
                 recyclerView.addOnScrollListener(createScrollListener());
                 recyclerView.setTag(R.id.recycler_scroll_listener_attached, true); // Mark listener as added

@@ -37,7 +37,7 @@ project.afterEvaluate {
             create<MavenPublication>("libraryProject") {
                 groupId = "com.github.iamgerryshom"
                 artifactId = "RVTrack"
-                version = "1.0.0"
+                version = "lv-1.6.0"
                 artifact(layout.buildDirectory.file("outputs/aar/${project.name}-release.aar"))
             }
         }
