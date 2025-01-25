@@ -1,25 +1,46 @@
-# RVTrackView
+# RVTrack
 
-RVTrackView is a custom Android View that provides an interactive indicator system to visually track the horizontal scroll position of a `RecyclerView`. It dynamically updates the position of indicators based on the scroll state of the `RecyclerView` and is designed to work with `LinearLayoutManager`.
+RVTrack is a custom Android library that provides an interactive indicator system to visually track the horizontal scroll position of a `RecyclerView`. It dynamically updates the position of indicators based on the scroll state of the `RecyclerView` and is designed to work with `LinearLayoutManager` as of the moment.
 
 ## Features
 
-- Syncs indicator positions with horizontal scrolling of a `RecyclerView`.
+- Syncs indicator positions with the horizontal scrolling of a `RecyclerView`.
 - Displays active and inactive circle indicators.
-- Supports custom indicator radius and gap size.
+- Supports customizable indicator radius and gap size.
 - Automatically adjusts to the number of items in the `RecyclerView`.
-- Allows easy integration by attaching to a `RecyclerView`.
+- Easy integration by attaching to a `RecyclerView`.
 
 ## Getting Started
 
 To use RVTrackView in your project:
 
-1. Add the `RVTrackView` class to your project.
-2. Include it in your layout XML file as follows:
-
-```xml
-<com.wid.rvtrack.RVTrackView
+1. **Add the following dependency to your `build.gradle` file:**
+   ```gradle
+   dependencies {
+	        implementation 'com.github.iamgerryshom:RVTrack:1.7.0'
+	}
+   ```
+3. **Include it in your layout XML file as follows:**
+   ```xml
+   <com.wid.rvtrack.RVTrackView
     android:id="@+id/rvTrackView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    app:recyclerView="@id/recyclerView" />
+    app:inactive_indicator_color="#717171"
+    app:active_indicator_color="#FFFFFF"
+    app:circle_indicator_radius="6dp"
+    app:recycler_view="@id/recyclerView" />
+   
+4. **Alternatively, to set it programmatically:**
+
+   You can attach the `RVTrackView` to your `RecyclerView` directly in your Java or Kotlin code like this:
+
+   ```java
+   final RecyclerView recyclerView = findViewById(R.id.recyclerView);
+   final RVTrackView rvTrackView = findViewById(R.id.rvTrackView);
+   rvTrackView.attachToRecyclerView(recyclerView);
+   ```
+
+   and that is all that you need to do.
+
+
